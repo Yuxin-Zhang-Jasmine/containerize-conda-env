@@ -41,7 +41,7 @@ you can modify `Singularity.template`, and specify it with the `--template` argu
 ## Clarification
 
 ### for Ubuntu:
-modify the Header of the singularity definition file to
+1. modify the Header of the singularity definition file to
 ```
 Bootstrap: debootstrap
 MirrorURL: http://us.archive.ubuntu.com/ubuntu/
@@ -52,7 +52,7 @@ where
 
 - jammy corresponds to Ubuntu 22.04 according to [the website of the Ubuntu releases](https://wiki.ubuntu.com/Releases). Similarily you can use other code words like trusty (14.04), xenial (16.04), and yakkety (17.04) for Ubuntu. (More info. can be found [here](https://docs.sylabs.io/guides/3.5/user-guide/appendix.html).)
 
-modify the post section as
+2. modify the post section as
 ```
 %post
   apt-get update
