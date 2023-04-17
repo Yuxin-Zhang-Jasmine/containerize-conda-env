@@ -1,22 +1,18 @@
 # Containerize an existing conda environment
 
-I use conda environments for working on data analysis projects.
-Sometimes I need to revert to install using `pip` or `R`'s
-`install.packages` if a package is not on bioconda or conda-forge.
 
-This makes it very hard to reproduce the environment, and therefore,
-the analysis, on another system. Even pure conda environments stored
-as an `environment.yml` file tend to [break after a
-while](https://github.com/conda/conda/issues/9257).
+This repository is based on [the contribution of Gregor Sturm](https://github.com/Yuxin-Zhang-Jasmine/containerize-conda).
 
-Using the instructions below allows to package an existing environment
-into a Singularity container which should be more portable
-and can also easily be integrated into a [fully reproducible
-data analysis
-workflow](https://grst.github.io/bioinformatics/2019/12/23/reportsrender.html)
-based on e.g. [Nextflow](https://www.nextflow.io/).
+In my case, I need to execute my deep learning codes in our High Performance Computing (HPC) cluster and it is required to
+ use singularity to containerize an existing conda environment;
+ make the image based on Ubuntu (because the existing conda environment is in my local machine with Ubuntu OS);
+ activate automatically the containerized conda environment once the container is started.
+ 
+I tried "conda-pack" but it doesn't work, therefore I applied conda_to_singularity.py given by Gregor Sturm without modifying anything and edited his singularity.template to fit in my case. The file singularity.template in the current repository is the edited one.
 
 ## Usage
+
+(exactly the same way as in [Gregor Sturm's repository](https://github.com/Yuxin-Zhang-Jasmine/containerize-conda).)
 
 ```
 usage: conda_to_singularity.py [-h] [--template TEMPLATE] CONDA_ENV OUTPUT_CONTAINER
@@ -38,42 +34,42 @@ For example
 conda_to_singularity.py /home/sturm/.conda/envs/whatever whatever.sif
 ```
 
-By default, the image will be based on CentOS 7. If you want a different base image,
+By default, the image will be based on Ubuntu. If you want a different base image,
 you can modify `Singularity.template`, and specify it with the `--template` argument.
 
 
-## How it works
+## Clarification
 
-Conda envs cannot simply be "moved" as some paths are hardcoded into the environment.
-I previously applied `conda-pack` to solve this issue, which works fine in most cases
-but breaks in some (especially for old environments that have a long history
-of manually installing stuff through R or pip).
+### for Ubuntu:
+modify the Header of the singularity definition file to
+```
+Bootstrap: debootstrap
+MirrorURL: http://us.archive.ubuntu.com/ubuntu/
+OSVersion: jammy
+```
+where 
+- the mandatory Bootstrap keyword describes the bootstrap module to use. The debootstrap build agent module allows us to build a Debian/Ubuntu style container from a mirror URI. And it is mandatory to specify the OS version and a URI for the mirror when we use the debootstrap module to specify a base for a Debian-like container. 
 
-This is an other appraoch where the issue is solved by copying the conda environment
-with its full absolute path to the container and append a line to the Singularity environment
-file that activates the conda environment from that path once the container is started:
+- jammy corresponds to Ubuntu 22.04 according to [the website of the Ubuntu releases](https://wiki.ubuntu.com/Releases). Similarily you can use other code words like trusty (14.04), xenial (16.04), and yakkety (17.04) for Ubuntu.
 
+
+### for the automatic activation 
+
+The originally repository by Gregor Sturm has the line below in the singularity definition file to append a line to the Singularity environment file in order to activates the conda environment once the container is started
 ```
 echo "source /opt/conda/bin/activate {conda_env}" >>$SINGULARITY_ENVIRONMENT
 ```
+However, this doesn't work for me because of two reasons:
+ 1. my UNIX shell does not support source. instead, it support .
+ 2. activate cannot be executed in my case.
+And in the updated version, I use the two lines below to replace the line above,
 
-Naively, this could be solved with `%files /path/to/env`, however, this dereferences
-all symbolic links, which breaks some environments. Instead, I build a tar archive
-that keeps all symbolic links intact *within* the conda environment, but at the
-same time include all files that are outside the conda env, but referenced
-by a symbolic link.
+```
+echo ". /opt/conda/etc/profile.d/conda.sh" >>$SINGULARITY_ENVIRONMENT
+echo "conda activate {conda_env}" >>$SINGULARITY_ENVIRONMENT
+```
+where the renewed version appends the conda command to the singularity environment and then use conda command to do activation. Because conda activate is also written in the singularity environment, this command would be executed once the container is started.
 
-I don't have a lot of experience yet if it is really more stable than conda-pack
-or just happens to fail in different cases.
-
-## Where's the conda-pack/Docker version?
-
-This is an updated version of my scripts that works without `conda-pack` and turned out
-to work even in cases where the conda-pack variant failed. It works only with Singularity at the moment. 
-I don't see any major issues porting the new approach to Docker, but don't have need for that myself. 
-
-If you are looking for the previous scripts based on `conda-pack`, because you need a Docker variant, or they just
-work for you, they are in the [conda-pack](conda-pack) folder with a dedicated [README](conda-pack/README.md).
 
 
 
