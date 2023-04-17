@@ -4,9 +4,9 @@
 This repository is based on [the contribution of Gregor Sturm](https://github.com/Yuxin-Zhang-Jasmine/containerize-conda).
 
 In my case, I need to execute my deep learning codes in our High Performance Computing (HPC) cluster and it is required to
- use singularity to containerize an existing conda environment;
- make the image based on Ubuntu (because the existing conda environment is in my local machine with Ubuntu OS);
- activate automatically the containerized conda environment once the container is started.
+- use singularity to containerize an existing conda environment;
+- make the image based on Ubuntu (because the existing conda environment is in my local machine with Ubuntu OS);
+- activate automatically the containerized conda environment once the container is started.
  
 I tried "conda-pack" but it doesn't work, therefore I applied conda_to_singularity.py given by Gregor Sturm without modifying anything and edited his singularity.template to fit in my case. The file singularity.template in the current repository is the edited one.
 
@@ -50,7 +50,7 @@ OSVersion: jammy
 where 
 - the mandatory Bootstrap keyword describes the bootstrap module to use. The debootstrap build agent module allows us to build a Debian/Ubuntu style container from a mirror URI. And it is mandatory to specify the OS version and a URI for the mirror when we use the debootstrap module to specify a base for a Debian-like container. 
 
-- jammy corresponds to Ubuntu 22.04 according to [the website of the Ubuntu releases](https://wiki.ubuntu.com/Releases). Similarily you can use other code words like trusty (14.04), xenial (16.04), and yakkety (17.04) for Ubuntu.
+- jammy corresponds to Ubuntu 22.04 according to [the website of the Ubuntu releases](https://wiki.ubuntu.com/Releases). Similarily you can use other code words like trusty (14.04), xenial (16.04), and yakkety (17.04) for Ubuntu. (More info. can be found [here](https://docs.sylabs.io/guides/3.5/user-guide/appendix.html).)
 
 
 ### for the automatic activation 
@@ -71,6 +71,18 @@ echo "conda activate {conda_env}" >>$SINGULARITY_ENVIRONMENT
 where the renewed version appends the conda command to the singularity environment and then use conda command to do activation. Because conda activate is also written in the singularity environment, this command would be executed once the container is started.
 
 
-
+### others in the def file
+- In the environment section, I added
+```
+export LC_ALL=C
+```
+- In the post section, I modified miniconda to be the latest version
+```
+curl https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh > /install_conda.sh
+```
+- In the post section, I added
+```
+chmod -R o+rx /opt/conda
+```
 
 
